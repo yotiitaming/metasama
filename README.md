@@ -1,8 +1,9 @@
-# META SAMA — website
+# META SAMA SOUNDSYSTEM — website
 
-Homepage concept for **META SAMA**, a London underground collective (hip-hop, beatmaking, electronic music, DJ culture, independent artists).
+Homepage for **META SAMA SOUNDSYSTEM**, an Interstellar Galactic Music Collective from London.
+*Sounds of the Eclectic. Eclectic Mobilisation.*
 
-Static HTML + CSS + vanilla JS, with no framework, no build step and no CMS.
+Static HTML + CSS + vanilla JS, with no framework, no build step and no CMS. Works on any static host (GitHub Pages, Netlify, shared hosting…).
 
 ## Run locally
 
@@ -12,31 +13,51 @@ python3 -m http.server 8000
 
 Then open http://localhost:8000.
 
-## Editing content
+## Editing content: `data/content.js`
 
-All content lives in **`data/content.js`**: events, releases, featured mix, artists, contact emails and social links.
+Everything editable lives in one file:
 
-- **Events** are sorted by date. Once an event's date has passed, it moves to the archive collage on its own.
-- **Posters / covers / portraits** are generated (SVG halftone, riso-style) as placeholders.
-  To use real artwork, add `poster: { image: 'assets/img/flyer.jpg' }` to an event, `image: '…'` to a release or artist.
-- **Mix player**: paste a SoundCloud URL into `featuredMix.soundcloud` to enable the embedded player (it only loads on click).
+| Block | What to fill in |
+|---|---|
+| `members` | `photo`, `bio`, `links: [{ label, url }]` for each artist |
+| `featuredEvent` | SOUND SHRED `date`, `venue`, `lineup`, `link`, optional `poster.image` |
+| `series` | Event series rows (Sound Shred, Beat Sessions…) |
+| `music` | Per category: `title`, `artist`, `url`, `embed` (SoundCloud or Bandcamp URL) |
+| `archive` | Flyers / photos / videos: set `image` to a real file |
 
-> ⚠️ Names, venues, dates, emails and links are realistic placeholders. Replace them with real info before going live.
+Empty fields render as clearly labelled placeholders (TBA, "Photo to come", "Placeholder art"). Nothing is invented.
+
+### ⚠️ Photo mapping to check
+
+The supplied photos had no names, so they are assigned **in upload order**:
+
+| File | Assigned to |
+|---|---|
+| `assets/img/members/photo-1.webp` | Automageddon |
+| `assets/img/members/photo-2.webp` | Mangrotin |
+| `assets/img/members/photo-3.webp` | Vigi Beats |
+| `assets/img/members/photo-4.webp` | Truefunktion |
+| `assets/img/members/photo-5.webp` | ELI.P |
+| *(missing)* | garagechild |
+
+Swap the `photo` paths in `data/content.js` if any are wrong.
+
+## Brand
+
+- Official logo: `assets/img/meta-sama-logo.svg`, used unmodified (inlined once as a `<symbol>` and recoloured via `fill` only).
+- Palette: near-black `#0a0a0a`, off-white `#f3f1ec`, META SAMA red `#ff2a1a`.
+- Fonts: Archivo (variable width), Instrument Serif, Space Mono (Google Fonts).
 
 ## Structure
 
 ```
-index.html            page markup (static text, section layout, SEO meta)
+index.html            markup, SEO meta, inline logo symbol
 data/content.js       all editable content
 assets/css/main.css   design system + layout (mobile-first)
-assets/js/posters.js  generative posters / covers / portraits
-assets/js/render.js   renders content.js into the page (+ Event JSON-LD)
-assets/js/main.js     interactions: kinetic type, horizontal scroll, reveals, drag, menu
+assets/js/posters.js  generative placeholder posters / covers
+assets/js/render.js   renders content.js into the page
+assets/js/main.js     interactions: kinetic type, reveals, horizontal scroll, portraits, drag, menu
 assets/js/pads.js     "Noise break" drum pads (Web Audio, no samples)
 ```
 
-## Notes
-
-- Fonts: Archivo (variable width axis), Instrument Serif, Space Mono, via Google Fonts.
-- `prefers-reduced-motion` is respected: no grain animation, horizontal scroll falls back to swipe, no kinetic type.
-- Deploy on GitHub Pages: Settings → Pages → Deploy from branch `main`, folder `/`.
+`prefers-reduced-motion` is respected.

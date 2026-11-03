@@ -60,11 +60,11 @@
     const id = ++uid, W = 500, H = 700, R = rng(e.id || e.title);
     const p = e.poster || {}, st = p.style || 'shred', acc = p.accent || C.red;
     const step = opt.small ? 19 : 13;
-    const d = new Date(e.date);
-    const day = fmt(d, { weekday: 'short' }).toUpperCase();
-    const dd = `${fmt(d, { day: '2-digit' })}.${fmt(d, { month: '2-digit' })}.${fmt(d, { year: '2-digit' })}`;
+    const d = e.date ? new Date(e.date) : null;
+    const day = d ? fmt(d, { weekday: 'short' }).toUpperCase() : 'DATE';
+    const dd = d ? `${fmt(d, { day: '2-digit' })}.${fmt(d, { month: '2-digit' })}.${fmt(d, { year: '2-digit' })}` : 'TBA';
     const lines = p.lines || e.title.split(/\s+/);
-    const ed = String(e.edition || '').replace(/^vol\.?/i, '').replace('#', '');
+    const ed = String(e.edition || '').replace(/^vol\.?/i, '').replace('#', '') || (opt.mark || '');
     const T = (y, maxH, fill) => stack(lines, { x: 22, y, w: 456, maxH, fill });
     let bg, fg, art = '', title = '', extra = '';
 
@@ -99,21 +99,21 @@
       title = `<rect x="22" y="372" width="456" height="222" fill="${C.ink}"/><g filter="url(#xr${id})">${stack(lines, { x: 34, y: 384, w: 432, maxH: 196, fill: fg })}</g>`;
     }
 
-    const lu = (e.lineup || []).join(' / ').toUpperCase();
+    const lu = (e.lineup && e.lineup.length ? e.lineup.join(' / ') : 'LINE-UP TBA').toUpperCase();
     const frame =
-      mono('META SAMA PRESENTS', 22, 40, { fill: fg }) + mono('LDN', 478, 40, { fill: fg, anchor: 'end' }) +
+      mono(opt.top || 'META SAMA SOUNDSYSTEM PRESENTS', 22, 40, { fill: fg }) + mono('LDN', 478, 40, { fill: fg, anchor: 'end' }) +
       `<rect x="22" y="48" width="456" height="1.5" fill="${fg}"/><rect x="22" y="614" width="456" height="1.5" fill="${fg}"/>` +
       mono(`${day} ${dd}${e.doors ? '  ' + e.doors : ''}`, 22, 638, { fill: fg }) +
-      mono(`${e.venue}, ${e.area}`.toUpperCase().slice(0, 54), 22, 658, { fill: fg }) +
+      mono((e.venue ? `${e.venue}, ${e.area || ''}` : `VENUE TBA — ${e.area || 'LONDON'}`).toUpperCase().slice(0, 54), 22, 658, { fill: fg }) +
       mono(lu.length > 54 ? lu.slice(0, 53) + '…' : lu, 22, 678, { fill: fg });
 
-    const label = `Poster: ${e.title} ${e.edition || ''}, ${day} ${dd}, ${e.venue}`;
+    const label = opt.label || `Poster: ${e.title} ${e.edition || ''}, ${day} ${dd}${e.venue ? ', ' + e.venue : ''}`;
     return `${open(W, H, label, 'art--poster')}<defs>${xerox(id)}</defs><rect width="${W}" height="${H}" fill="${bg}"/>${art}${extra}${title}${frame}</svg>`;
   }
 
   /* ---------------------------------------------------------------- cover */
   function cover(r) {
-    const id = ++uid, W = 500, H = 500, R = rng(r.cat), st = (r.cover && r.cover.style) || 'dots';
+    const id = ++uid, W = 500, H = 500, R = rng(r.id || r.cat), st = (r.cover && r.cover.style) || 'dots';
     let bg, fg, art = '';
     if (st === 'dots') {
       bg = C.paper; fg = C.ink;
@@ -137,11 +137,11 @@
       }
     } else { /* bignum */
       bg = C.blue; fg = C.paper;
-      const num = (r.cat.match(/\d+/) || ['0'])[0];
+      const num = r.mark || '00';
       art = `<text class="pt" x="24" y="470" font-size="430" textLength="452" lengthAdjust="spacingAndGlyphs" fill="${fg}" filter="url(#xr${id})">${esc(num)}</text>`;
     }
-    const top = `<rect x="0" y="0" width="${W}" height="44" fill="${bg}"/>` + mono(r.cat, 24, 30, { fill: fg }) + mono('META SAMA REC.', 476, 30, { fill: fg, anchor: 'end' });
-    return `${open(W, H, `Cover: ${r.artist} — ${r.title}`, 'art--cover')}<defs>${xerox(id, 3)}</defs><rect width="${W}" height="${H}" fill="${bg}"/>${art}${top}</svg>`;
+    const top = `<rect x="0" y="0" width="${W}" height="44" fill="${bg}"/>` + mono(r.label || '', 24, 30, { fill: fg }) + mono('PLACEHOLDER ART', 476, 30, { fill: fg, anchor: 'end' });
+    return `${open(W, H, `Placeholder artwork: ${r.label || ''}`, 'art--cover')}<defs>${xerox(id, 3)}</defs><rect width="${W}" height="${H}" fill="${bg}"/>${art}${top}</svg>`;
   }
 
   /* ------------------------------------------------------------- portrait */

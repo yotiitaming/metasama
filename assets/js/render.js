@@ -12,174 +12,174 @@
   const ddmm = (d) => `${fmt(d, { day: '2-digit' })}.${fmt(d, { month: '2-digit' })}`;
   const dow = (d) => fmt(d, { weekday: 'short' }).toUpperCase();
   const lineupHTML = (s) => esc(s).replace(/\s+b2b\s+/gi, ' <em>b2b</em> ').replace(/\((.+?)\)/g, '<em>$1</em>');
-  const posterHTML = (e, opt) => (e.poster && e.poster.image)
-    ? `<img src="${esc(e.poster.image)}" alt="Poster: ${esc(e.title)} ${esc(e.edition || '')}" loading="lazy" decoding="async">`
-    : P.event(e, opt);
-
-  const now = new Date();
-  const all = D.events
-    .map((e) => Object.assign({}, e, { _d: new Date(e.date), _end: new Date(e.end || e.date) }))
-    .sort((a, b) => a._d - b._d);
-  const upcoming = all.filter((e) => e._end >= now);
-  const past = all.filter((e) => e._end < now).reverse();
-  const next = upcoming[0];
+  const tba = (v, label) => v ? esc(v) : `<span class="tba">${label || 'TBA'}</span>`;
+  const ext = (url) => /^https?:/.test(url) ? ' target="_blank" rel="noopener"' : '';
+  const L = D.links || {};
 
   /* ---- ticker ---- */
   const tk = $('[data-ticker]');
   if (tk) {
-    const items = next
-      ? [`Next → ${next.title} ${next.edition}`, `${dow(next._d)} ${fmt(next._d, { day: 'numeric', month: 'long' })}`, `${next.venue}, ${next.area}`].concat(next.lineup, ['Doors ' + next.doors])
-      : ['New dates soon', 'Stay locked'];
+    const items = ['Sounds of the Eclectic', 'Interstellar Galactic Music Collective', 'Eclectic Mobilisation', 'Sound Shred', 'Beat Sessions', 'London']
+      .concat(D.members.map((m) => m.name));
     const chunk = items.map((t) => `<span>${esc(t)}</span><span class="ticker__sep">✶</span>`).join('');
     tk.innerHTML = `<div class="ticker__track">${chunk}${chunk}</div>`;
   }
 
-  /* ---- next event ---- */
+  /* ---- featured event ---- */
+  const e = D.featuredEvent;
   const nx = $('[data-next]');
-  if (nx) {
-    if (!next) {
-      nx.innerHTML = '<p class="next__empty">No dates announced yet. Get on the mailing list and you\'ll hear first.</p>';
-    } else {
-      nx.innerHTML = `
-        <div class="next__poster" data-reveal>
-          <figure class="poster" data-tilt style="--rot:-2.5deg">
-            <span class="tape" aria-hidden="true"></span>
-            ${posterHTML(next)}
-          </figure>
+  if (nx && e) {
+    const d = e.date ? new Date(e.date) : null;
+    const poster = e.poster && e.poster.image
+      ? `<img src="${esc(e.poster.image)}" alt="Poster: ${esc(e.title)} ${esc(e.edition)}" loading="lazy" decoding="async">`
+      : P.event(e, { mark: e.edition ? '' : 'TBA', label: `Placeholder poster: ${e.title}` });
+    nx.innerHTML = `
+      <div class="next__poster" data-reveal>
+        <figure class="poster" data-tilt style="--rot:-2.5deg">
+          <span class="tape" aria-hidden="true"></span>
+          ${poster}
+          ${e.poster && e.poster.image ? '' : '<figcaption class="ph-label mono">Placeholder poster</figcaption>'}
+        </figure>
+      </div>
+      <div class="next__info">
+        <p class="next__when" data-reveal>
+          <span class="next__date">${d ? ddmm(d) : 'TBA'}</span>
+          <span class="next__dow mono">${d ? `${dow(d)}<br>${fmt(d, { year: 'numeric' })}` : 'Date<br>to be<br>announced'}</span>
+        </p>
+        <h3 class="next__title" data-reveal>${esc(e.title)} <span class="next__ed">${e.edition ? esc(e.edition) : 'Next edition'}</span></h3>
+        <p class="next__blurb" data-reveal>${esc(e.blurb || '')}</p>
+        <div class="lineup" data-reveal>
+          <p class="mono lineup__label">Line-up</p>
+          ${e.lineup && e.lineup.length
+            ? `<ul>${e.lineup.map((l) => `<li>${lineupHTML(l)}</li>`).join('')}</ul>`
+            : '<ul><li class="lineup--tba">To be <em>announced</em></li></ul>'}
         </div>
-        <div class="next__info">
-          <p class="next__when" data-reveal>
-            <span class="next__date">${ddmm(next._d)}</span>
-            <span class="next__dow mono">${dow(next._d)}<br>${fmt(next._d, { year: 'numeric' })}<br>${esc(next.doors)}</span>
-          </p>
-          <h3 class="next__title" data-reveal>${esc(next.title)} <span class="next__ed">${esc(next.edition)}</span></h3>
-          <p class="next__blurb" data-reveal>${esc(next.blurb || '')}</p>
-          <ul class="lineup" data-reveal aria-label="Line-up">${next.lineup.map((l) => `<li>${lineupHTML(l)}</li>`).join('')}</ul>
-          <dl class="facts mono" data-reveal>
-            <dt>Where</dt><dd>${esc(next.venue)}, ${esc(next.area)}</dd>
-            <dt>When</dt><dd>${dow(next._d)} ${fmt(next._d, { day: 'numeric', month: 'long' })}, ${esc(next.doors)}</dd>
-            <dt>Entry</dt><dd>${esc(next.price || '')}</dd>
-          </dl>
-          <div class="next__cta" data-reveal>
-            <a class="btn" href="${esc(next.tickets || '#contact')}">Get tickets <span aria-hidden="true">↗</span></a>
-            <p class="countdown mono" data-countdown="${next._d.toISOString()}"></p>
-          </div>
-        </div>`;
-    }
+        <dl class="facts mono" data-reveal>
+          <dt>Where</dt><dd>${tba(e.venue, 'Venue TBA')}${e.area ? ' — ' + esc(e.area) : ''}</dd>
+          <dt>When</dt><dd>${d ? `${dow(d)} ${fmt(d, { day: 'numeric', month: 'long' })}` : '<span class="tba">Date TBA</span>'}${e.doors ? ', ' + esc(e.doors) : ''}</dd>
+          <dt>Entry</dt><dd>${tba(e.price, 'TBA')}</dd>
+        </dl>
+        <div class="next__cta" data-reveal>
+          <a class="btn" href="${esc(e.link || L.linktree || '#contact')}"${ext(e.link || L.linktree)}>${esc(e.linkLabel || 'Info')} <span aria-hidden="true">↗</span></a>
+          ${d ? `<p class="countdown mono" data-countdown="${d.toISOString()}"></p>` : '<p class="countdown mono">Follow @metasamasoundsystem for the announcement</p>'}
+        </div>
+      </div>`;
   }
 
-  /* ---- agenda (rest of upcoming) ---- */
+  /* ---- series list ---- */
   const ag = $('[data-agenda]');
-  if (ag) {
-    const rest = upcoming.slice(1);
-    ag.innerHTML = rest.length
-      ? rest.map((e) => `
-        <li data-reveal>
-          <a class="agenda__row" href="${esc(e.tickets || '#events')}">
-            <span class="agenda__date mono">${dow(e._d)} ${ddmm(e._d)}</span>
-            <span class="agenda__title">${esc(e.title)} <em>${esc(e.edition)}</em></span>
-            <span class="agenda__where mono">${esc(e.venue)} — ${esc(e.area)}</span>
-            <span class="agenda__arrow" aria-hidden="true">→</span>
-          </a>
-        </li>`).join('')
-      : '<li class="agenda__row mono">More dates soon.</li>';
+  if (ag && D.series) {
+    ag.innerHTML = D.series.map((s) => `
+      <li data-reveal>
+        <a class="agenda__row" href="${esc(s.link || '#events')}"${ext(s.link)}>
+          <span class="agenda__date mono">Series</span>
+          <span class="agenda__title">${esc(s.title)}</span>
+          <span class="agenda__where mono">${esc(s.note)}</span>
+          <span class="agenda__arrow" aria-hidden="true">↗</span>
+        </a>
+      </li>`).join('');
   }
 
-  /* ---- releases ---- */
-  const rl = $('[data-releases]');
-  if (rl) {
-    rl.innerHTML = D.releases.map((r, i) => {
-      const href = r.bandcamp || r.soundcloud || '#music';
-      const links = [r.bandcamp && `<a href="${esc(r.bandcamp)}">Bandcamp ↗</a>`, r.soundcloud && `<a href="${esc(r.soundcloud)}">SoundCloud ↗</a>`].filter(Boolean).join('');
+  /* ---- members ---- */
+  const mb = $('[data-members]');
+  if (mb) {
+    const n = D.members.length;
+    mb.innerHTML = D.members.map((m, i) => {
+      const id = `member-${i + 1}`;
+      const fit = (100 / (Math.max(4, m.name.length) * 0.5)).toFixed(2);
+      const photo = m.photo
+        ? `<img src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy" decoding="async" style="object-position:${esc(m.focus || '50% 40%')}">`
+        : `<span class="member__nophoto"><span class="mono">Photo to come</span></span>`;
+      const links = (m.links || []).length
+        ? m.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')
+        : '<span class="tba">Links TBA</span>';
       return `
-        <article class="release hs__panel" style="--i:${i}">
-          <a class="release__cover" href="${esc(href)}" aria-label="Listen: ${esc(r.artist)} — ${esc(r.title)}">
-            ${r.image ? `<img src="${esc(r.image)}" alt="" loading="lazy" decoding="async">` : P.cover(r)}
-            <span class="release__play mono" aria-hidden="true">▶ Play</span>
-          </a>
-          <p class="release__meta mono"><span>${esc(r.cat)}</span><span>${esc(r.format)}</span><span>${esc(r.year)}</span></p>
-          <h3 class="release__title">${esc(r.title)}</h3>
-          <p class="release__artist">${esc(r.artist)}</p>
-          <p class="release__links mono">${links}</p>
+        <article class="member member--${i + 1}" data-member data-reveal aria-labelledby="${id}-name">
+          <button class="member__hit" type="button" aria-expanded="false" aria-controls="${id}-panel">
+            <span class="member__num mono">${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}</span>
+            <span class="member__photo">${photo}</span>
+            <span class="member__name" id="${id}-name" style="--fit:${fit}">${esc(m.name)}</span>
+            <span class="member__more mono" aria-hidden="true">+ Info</span>
+          </button>
+          <div class="member__panel" id="${id}-panel">
+            <p class="mono member__panel-name">${esc(m.name)}</p>
+            <p class="member__bio">${m.bio ? esc(m.bio) : '<span class="tba">Biography coming soon.</span>'}</p>
+            <p class="member__links mono">${links}</p>
+          </div>
         </article>`;
     }).join('');
   }
 
-  /* ---- featured mix ---- */
-  const mx = $('[data-mix]');
-  if (mx && D.featuredMix) {
-    const m = D.featuredMix;
-    mx.innerHTML = `
-      <p class="mono mix__kicker">Mix of the month</p>
-      <h3 class="mix__title">${esc(m.title)}</h3>
-      <p class="mono mix__meta">${esc(m.meta)}</p>
-      <div class="mix__player" data-embed="${esc(m.soundcloud ? 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(m.soundcloud) + '&color=%23ff3b1f&auto_play=true&hide_related=true&show_comments=false&visual=false' : '')}">
-        <button class="mix__btn" type="button"><span aria-hidden="true">▶</span> Load player</button>
-        <p class="mono mix__note">${m.soundcloud ? 'Loads SoundCloud (third-party).' : 'Add a SoundCloud URL in data/content.js'}</p>
-      </div>`;
-  }
-
-  /* ---- artists ---- */
-  const ro = $('[data-roster]');
-  if (ro) {
-    ro.innerHTML = D.artists.map((a, i) => `
-      <li class="artist" data-artist="${i}" data-reveal>
-        <span class="artist__num mono">${String(i + 1).padStart(2, '0')}</span>
-        <span class="artist__thumb" aria-hidden="true">${a.image ? `<img src="${esc(a.image)}" alt="">` : P.portrait(a, i)}</span>
-        <h3 class="artist__name">${esc(a.name)}</h3>
-        <p class="artist__roles mono">${a.roles.map(esc).join(' / ')}</p>
-        <p class="artist__area mono">${esc(a.area)}</p>
-        <p class="artist__bio visually-hidden">${esc(a.bio)}</p>
-      </li>`).join('');
+  /* ---- music slots ---- */
+  const mu = $('[data-music]');
+  if (mu) {
+    mu.innerHTML = D.music.map((r, i) => {
+      const href = r.url || L.linktree || '#music';
+      return `
+        <article class="release hs__panel" style="--i:${i}">
+          <a class="release__cover" href="${esc(href)}"${ext(href)} aria-label="${esc(r.type)}${r.title ? ': ' + esc(r.title) : ' (placeholder)'}">
+            ${r.image ? `<img src="${esc(r.image)}" alt="" loading="lazy" decoding="async">` : P.cover({ id: r.id, label: r.type.toUpperCase(), mark: String(i + 1).padStart(2, '0'), cover: r.cover })}
+            <span class="release__play mono" aria-hidden="true">▶ Listen</span>
+          </a>
+          <p class="release__meta mono"><span>${String(i + 1).padStart(2, '0')}</span><span>${esc(r.type)}</span></p>
+          <h3 class="release__title">${r.title ? esc(r.title) : '<span class="tba-big">Title TBA</span>'}</h3>
+          <p class="release__artist">${r.artist ? esc(r.artist) : 'Artist TBA'}</p>
+          <p class="release__links mono">${r.embed ? `<button type="button" class="embed-btn" data-embed-src="${esc(r.embed)}">▶ Load player</button>` : '<span class="tba">SoundCloud / Bandcamp embed slot</span>'}</p>
+        </article>`;
+    }).join('');
   }
 
   /* ---- archive collage ---- */
   const ar = $('[data-archive]');
   if (ar) {
-    const slots = [[1, 4, -6], [19, 30, 4], [38, 2, -2], [57, 24, 7], [77, 4, -8], [6, 56, 3], [44, 56, -4], [70, 54, 5]];
-    const flyers = past.slice(0, slots.length).map((e, i) => {
+    const slots = [[1, 3, -6], [20, 28, 4], [39, 2, -2], [58, 26, 6], [78, 4, -8], [8, 58, 3], [46, 60, -4], [70, 56, 5]];
+    const items = D.archive.slice(0, slots.length).map((a, i) => {
       const [x, y, r] = slots[i];
+      let body;
+      if (a.image) body = `<img src="${esc(a.image)}" alt="${esc(a.caption)}" loading="lazy" decoding="async">`;
+      else if (a.kind === 'flyer') body = P.event({ id: 'arch' + i, title: a.title || 'Sound Shred', area: 'London', poster: { style: a.style || 'shred' } }, { small: true, mark: 'TBA', label: `Placeholder flyer: ${a.caption}` });
+      else body = `<span class="ph ph--${a.kind}"><span class="mono">${a.kind === 'video' ? '▶ Video to come' : 'Photo to come'}</span></span>`;
       return `
-        <figure class="flyer" data-drag style="--x:${x}%;--y:${y}%;--r:${r}deg">
-          ${posterHTML(e, { small: true })}
-          <figcaption class="mono">${esc(e.title)} ${esc(e.edition || '')} — ${ddmm(e._d)}.${fmt(e._d, { year: '2-digit' })}</figcaption>
+        <figure class="flyer flyer--${a.kind}" data-drag style="--x:${x}%;--y:${y}%;--r:${r}deg">
+          ${body}
+          <figcaption class="mono">${esc(a.caption)}${a.image ? '' : ' — placeholder'}</figcaption>
         </figure>`;
     }).join('');
-    const sSlots = [[30, 24, -10], [62, 8, 6], [14, 48, 4], [82, 50, -5], [52, 88, -3]];
+    const sSlots = [[30, 22, -10], [63, 7, 6], [14, 48, 4], [84, 52, -5], [36, 90, -3]];
     const scraps = (D.archiveScraps || []).slice(0, sSlots.length).map((t, i) => {
       const [x, y, r] = sSlots[i];
       return `<p class="scrap scrap--${i % 3}" data-drag style="--x:${x}%;--y:${y}%;--r:${r}deg">${esc(t)}</p>`;
     }).join('');
-    ar.innerHTML = flyers + scraps;
+    ar.innerHTML = items + scraps;
   }
 
   /* ---- contact ---- */
   const ct = $('[data-contact]');
   if (ct) {
-    ct.innerHTML = D.contact.map((c) => `
+    const rows = [
+      { label: 'Instagram', url: L.instagram, handle: '@metasamasoundsystem', desc: 'Bookings, collaborations, event enquiries and artist submissions.' },
+      { label: 'Linktree', url: L.linktree, handle: 'linktr.ee/metasamasoundsystem', desc: 'Music, events and everything else in one place.' }
+    ];
+    ct.innerHTML = rows.map((c) => `
       <li data-reveal>
-        <a class="contact__row" href="mailto:${esc(c.email)}">
+        <a class="contact__row" href="${esc(c.url)}" target="_blank" rel="noopener">
           <span class="contact__label">${esc(c.label)}</span>
           <span class="contact__desc">${esc(c.desc)}</span>
-          <span class="contact__mail mono">${esc(c.email)} <span aria-hidden="true">↗</span></span>
+          <span class="contact__mail mono">${esc(c.handle)} <span aria-hidden="true">↗</span></span>
         </a>
       </li>`).join('');
   }
-  const so = $('[data-socials]');
-  if (so) so.innerHTML = D.socials.map((s) => `<li><a href="${esc(s.url)}" rel="me noopener" target="_blank">${esc(s.label)}</a></li>`).join('');
 
-  /* ---- structured data for upcoming events ---- */
-  if (upcoming.length) {
+  /* ---- structured data for a dated featured event ---- */
+  if (e && e.date && e.venue) {
     const ld = document.createElement('script');
     ld.type = 'application/ld+json';
-    ld.textContent = JSON.stringify(upcoming.map((e) => ({
+    ld.textContent = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'MusicEvent',
-      name: `${e.title} ${e.edition || ''}`.trim(), startDate: e.date, endDate: e.end,
-      location: { '@type': 'Place', name: e.venue, address: `${e.area}, London` },
-      performer: e.lineup.map((n) => ({ '@type': 'PerformingGroup', name: n.replace(/\s*\(.*?\)/g, '') })),
-      organizer: { '@type': 'Organization', name: 'META SAMA' },
-      description: e.blurb || ''
-    })));
+      name: `${e.title} ${e.edition || ''}`.trim(), startDate: e.date,
+      location: { '@type': 'Place', name: e.venue, address: `${e.area || ''}, London` },
+      organizer: { '@type': 'Organization', name: 'META SAMA SOUNDSYSTEM' }
+    });
     document.head.appendChild(ld);
   }
 })();

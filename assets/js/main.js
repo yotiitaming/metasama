@@ -73,10 +73,10 @@
   }
 
   /* ---------- record: spin speed follows scroll velocity & pads ---------- */
-  const rec = $('.record');
+  const rec = $('.ring');
   let recAnim = null;
   if (rec && !reduce.matches && rec.animate) {
-    recAnim = rec.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 9000, iterations: Infinity });
+    recAnim = rec.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 30000, iterations: Infinity });
   }
   let boost = 0;
   document.addEventListener('ms:hit', (e) => { boost = Math.min(boost + (e.detail === 'kick' ? 4 : 1.5), 10); });
@@ -184,27 +184,26 @@
     });
   }
 
-  /* ---------- artists: portrait follows the cursor ---------- */
-  const follow = $('[data-follow]');
-  if (follow && fine.matches) {
-    let fx = 0, fy = 0, tx = 0, ty = 0, on = false, fr = 0;
-    const loop = () => {
-      fx += (tx - fx) * 0.16; fy += (ty - fy) * 0.16;
-      follow.style.transform = `translate3d(${fx.toFixed(1)}px,${fy.toFixed(1)}px,0) rotate(${clamp((tx - fx) * 0.05, -12, 12).toFixed(2)}deg)`;
-      fr = (on || Math.abs(tx - fx) > 0.5) ? requestAnimationFrame(loop) : 0;
-    };
-    $$('.artist').forEach((row) => {
-      row.addEventListener('pointerenter', (e) => {
-        const thumb = $('.artist__thumb', row);
-        follow.innerHTML = thumb.innerHTML + `<p class="follow__cap mono">${$('.artist__bio', row).textContent}</p>`;
-        if (!on) { fx = tx = e.clientX + 24; fy = ty = e.clientY - 120; }
-        on = true; follow.classList.add('is-on');
-        if (!fr) fr = requestAnimationFrame(loop);
+  /* ---------- members: hover on desktop, tap to open (all devices) ---------- */
+  $$('[data-member]').forEach((card) => {
+    const hit = $('.member__hit', card);
+    hit.addEventListener('click', () => {
+      const open = hit.getAttribute('aria-expanded') !== 'true';
+      $$('[data-member].is-open').forEach((c) => {
+        if (c !== card) { c.classList.remove('is-open'); $('.member__hit', c).setAttribute('aria-expanded', 'false'); }
       });
-      row.addEventListener('pointermove', (e) => { tx = e.clientX + 24; ty = e.clientY - 120; });
-      row.addEventListener('pointerleave', () => { on = false; follow.classList.remove('is-on'); });
+      card.classList.toggle('is-open', open);
+      hit.setAttribute('aria-expanded', String(open));
     });
-  }
+    if (fine.matches && !reduce.matches) {
+      card.addEventListener('pointermove', (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--px', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+        card.style.setProperty('--py', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+      });
+      card.addEventListener('pointerleave', () => { card.style.removeProperty('--px'); card.style.removeProperty('--py'); });
+    }
+  });
 
   /* ---------- archive: drag flyers around ---------- */
   let z = 10;
@@ -265,14 +264,15 @@
     t(); setInterval(t, 1000);
   }
 
-  /* ---------- embed facade ---------- */
-  $$('[data-embed]').forEach((box) => {
-    const b = $('button', box);
-    b.addEventListener('click', () => {
-      const src = box.dataset.embed;
-      if (!src) { const n = $('.mix__note', box); if (n) n.classList.add('flash'); setTimeout(() => n && n.classList.remove('flash'), 600); return; }
-      box.innerHTML = `<iframe title="SoundCloud player" width="100%" height="166" allow="autoplay" loading="lazy" src="${src}"></iframe>`;
-    });
+  /* ---------- embed facade: third-party player loads only on click ---------- */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-embed-src]'); if (!b) return;
+    const url = b.dataset.embedSrc;
+    const src = /bandcamp\.com\/EmbeddedPlayer/.test(url) ? url
+      : 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(url) + '&color=%23ff2a1a&auto_play=true&visual=false';
+    const f = document.createElement('iframe');
+    f.title = 'Audio player'; f.width = '100%'; f.height = '120'; f.allow = 'autoplay'; f.loading = 'lazy'; f.src = src;
+    b.replaceWith(f);
   });
 
   /* ---------- year ---------- */
